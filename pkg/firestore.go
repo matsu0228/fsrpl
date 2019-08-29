@@ -1,4 +1,4 @@
-package main
+package fsrpl
 
 import (
 	"bytes"
@@ -17,13 +17,13 @@ import (
 	"google.golang.org/api/option"
 )
 
-// Firestore :データストア
+// Firestore is datastore object
 type Firestore struct {
 	firebase        *firebase.App
 	firestoreClient *firestore.Client
 }
 
-// NewFirebase connect firebase
+// NewFirebase is constoractor. connect firebase and firestore
 func NewFirebase(ctx context.Context, crtFile string) (*Firestore, error) {
 
 	_, err := os.Stat(crtFile)
@@ -65,24 +65,14 @@ func (f *Firestore) SaveData(ctx context.Context, path string, data map[string]i
 	}
 	log.Printf("[INFO] SaveDoc() path:%v w/ %#v", path, data)
 	doc := f.firestoreClient.Collection(colID).Doc(docID)
+	log.Printf("[INFO] SaveDoc() doc path:%v ", doc.Path)
 	_, err = doc.Set(ctx, data)
+	// log.Printf("[INFO] SaveDoc() result %#v.  path:%v ", wr, path)
 	return err
 }
 
-// Scan is function scan stream data from firestore path
-func (f *Firestore) Scan(ctx context.Context, path string) (io.Reader, error) {
-
-	colID, docID, err := f.parsePath(path)
-	if err != nil {
-		return nil, err
-	}
-	snap, err := f.firestoreClient.Collection(colID).Doc(docID).Get(ctx)
-	if err != nil {
-		return nil, err
-	}
-
-	data := snap.Data()
-	s, err := json.Marshal(data)
+func (f *Firestore) dataToStream(d map[string]interface{}) (io.Reader, error) {
+	s, err := json.Marshal(d)
 	if err != nil {
 		return nil, err
 	}
@@ -91,15 +81,66 @@ func (f *Firestore) Scan(ctx context.Context, path string) (io.Reader, error) {
 	return reader, nil
 }
 
+// Scan is function scan stream data from firestore path
+func (f *Firestore) Scan(ctx context.Context, path string) (map[string]io.Reader, error) {
+
+	rs := map[string]io.Reader{}
+
+	colID, docID, err := f.parsePath(path)
+	if err != nil {
+		return rs, err
+	}
+
+	if docID == "*" { // wildcard
+		dRefs, err := f.firestoreClient.Collection(colID).DocumentRefs(ctx).GetAll()
+		if err != nil {
+			return rs, err
+		}
+		for _, d := range dRefs {
+			snap, err := d.Get(ctx)
+			if err != nil {
+				return rs, err
+			}
+			log.Printf("[DEBUG] id:%v, doc:%#v", d.ID, snap.Data())
+			r, err := f.dataToStream(snap.Data())
+			if err != nil {
+				return rs, err
+			}
+			rs[d.ID] = r
+		}
+
+		return rs, err
+	}
+
+	snap, err := f.firestoreClient.Collection(colID).Doc(docID).Get(ctx)
+	if err != nil {
+		return nil, err
+	}
+
+	data := snap.Data()
+	r, err := f.dataToStream(data)
+	rs[snap.Ref.ID] = r
+	return rs, err
+}
+
 // ReaderToStruct :
 func ReaderToStruct(reader io.Reader, outStream io.Writer) error {
-	parser := gojson.ParseJson
+	var parser gojson.Parser
+	parser = func(input io.Reader) (interface{}, error) {
+		var result interface{}
+		if err := json.NewDecoder(input).Decode(&result); err != nil {
+			return nil, err
+		}
+		return result, nil
+	}
+
 	name := "JsonStruct"
 	pkg := "main"
 	tagList := []string{"json"}
 	subStruct := false
-	convertFloats := true
-	output, err := gojson.Generate(reader, parser, name, pkg, tagList, subStruct, convertFloats)
+	// convertFloats := true
+
+	output, err := gojson.Generate(reader, parser, name, pkg, tagList, subStruct) //, convertFloats)
 	if err != nil {
 		return err
 	}
@@ -109,9 +150,15 @@ func ReaderToStruct(reader io.Reader, outStream io.Writer) error {
 
 // ToStruct is converter from firestore data to GoStruct
 func (f *Firestore) ToStruct(ctx context.Context, path string, outStream io.Writer) error {
-	reader, err := f.Scan(ctx, path)
+	readerList, err := f.Scan(ctx, path)
 	if err != nil {
 		return err
 	}
-	return ReaderToStruct(reader, outStream)
+	for k, reader := range readerList {
+		err = ReaderToStruct(reader, outStream)
+		if err != nil {
+			log.Printf("[ERROR] %v w/%v", err, k)
+		}
+	}
+	return err
 }

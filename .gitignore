@@ -1,4 +1,3 @@
 secrets/*
-!secrets/README
 bin/*
 !bin/README

@@ -1,4 +1,4 @@
-BINARY_NAME=gfs
+BINARY_NAME=fsrpl
 
 build: clean
 	go build  -o ./bin/$(BINARY_NAME)
