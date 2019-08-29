@@ -3,20 +3,28 @@
 fsrpl is CloudFirestore replication tool.
 
 Features:
+
 - Replicate CloudFirestore's some node data to another node.
 - Make Go struct from CloudFirestore's some node data.
 
+<!-- MarkdownTOC -->
+
+- [fsrpl](#fsrpl)
+  - [DEMO](#demo)
+  - [SETUP](#setup)
+  - [USAGE](#usage)
+    - [replicate some documents](#replicate-some-documents)
+    - [export data from some documents](#export-data-from-some-documents)
+    - [generate Go struct from some document](#generate-go-struct-from-some-document)
+    <!-- /MarkdownTOC -->
 
 ## DEMO
-
 
 replicate `specific one document` and `each documents with wildcard option`
 
 ![fsrpl_demo_190829_02](https://user-images.githubusercontent.com/5501329/63935971-a6dfc280-ca99-11e9-8d8c-1e4e93516602.gif)
 
-
 ## SETUP
-
 
 write later..
 
@@ -38,7 +46,6 @@ e.g.
 fsrpl "inputData/user" -d "new/user"
 fsrpl "inputData/*" -d "outputData/*"
 ```
-
 
 ### export data from some documents
 
@@ -116,4 +123,3 @@ type JsonStruct struct {
 }
 
 ```
-

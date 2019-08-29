@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"flag"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -11,19 +11,23 @@ import (
 	"strings"
 
 	fsrpl "github.com/matsu0228/fsrpl/pkg"
+	kingpin "gopkg.in/alecthomas/kingpin.v2"
 )
 
-var crtFile, firestorePath, jsonFilePath, outputPath string
-var isOutputFile, isOutputGoStruct bool
+var (
+	// version
+	version  = "0.0.1"
+	revision = "0"
 
-func init() {
-	flag.StringVar(&crtFile, "secret", "", "set secrets json for firestore")
-	flag.StringVar(&firestorePath, "p", "", "set firetstore path(containts collection's path and documentID")
+	app       = kingpin.New("fsrpl", "A firestore replication tool.")
+	crtFile   = app.Flag("secret", "set secrets json for firestore").Default("").String()
+	inputPath = app.Arg("targetPath", "target firestore path(containts collection's path and documentID)").Default("").String()
+
 	// output
-	flag.StringVar(&outputPath, "d", "", "destination firestore path(containts collection's path and documentID")
-	flag.BoolVar(&isOutputFile, "f", false, "output json data to file")
-	flag.BoolVar(&isOutputGoStruct, "s", false, "output go struct to stdout")
-}
+	outputPath       = app.Flag("destPath", "destination firestore path(containts collection's path and documentID)").Short('d').Default("").String()
+	isExportFile     = app.Flag("isExportFile", "output json data to file").Short('f').Default("false").Bool()
+	isOutputGoStruct = app.Flag("isGoStruct", "output go struct to stdout").Short('g').Default("false").Bool()
+)
 
 func errorCheck(err error) {
 	if err != nil {
@@ -35,63 +39,85 @@ func errorExit(err error) {
 	log.Fatalf("[ERROR] %v", err)
 }
 
-func main() {
-
-	flag.Parse()
-
-	// validate
-	if crtFile == "" {
-		crtFile = os.Getenv("FIRESTORE_SECRET")
-	}
-	if crtFile == "" {
-		errorCheck(fmt.Errorf("set secret file path: --secret ** %v", ""))
+func validate() error {
+	if *inputPath == "" {
+		return errors.New("set first option")
 	}
 
-	// validate of options
+	if *crtFile == "" {
+		*crtFile = os.Getenv("FIRESTORE_SECRET")
+		if *crtFile == "" {
+			return errors.New("set secret file path: --secret **")
+		}
+	}
+	return nil
+}
 
-	log.Printf("[INFO] connect firestore with: %v", crtFile)
-
+func run() error {
 	ctx := context.Background()
-	repo, err := fsrpl.NewFirebase(ctx, crtFile)
-	errorCheck(err)
-	log.Printf("[DEBUG] repo %#v", repo)
+	repo, err := fsrpl.NewFirebase(ctx, *crtFile)
+	if err != nil {
+		return err
+	}
 
 	outStream := os.Stdout
-
-	if isOutputFile {
-
+	if *isOutputGoStruct {
+		err = repo.ToStruct(ctx, *inputPath, outStream)
+		return err
 	}
 
-	if isOutputGoStruct {
-		err = repo.ToStruct(ctx, firestorePath, outStream)
-		errorCheck(err)
+	readerList, err := repo.Scan(ctx, *inputPath)
+	if err != nil {
+		return err
 	}
-
-	readerList, err := repo.Scan(ctx, firestorePath)
-	errorCheck(err)
 
 	for k, reader := range readerList {
 
-		if isOutputFile {
+		if *isExportFile {
 			log.Printf("[INFO] write with : %v ----------------\n", k)
 			_, err = io.Copy(outStream, reader)
-			errorCheck(err)
+			if err != nil {
+				return err
+			}
 			continue
 		}
 
-		if outputPath != "" {
-			path := strings.Replace(outputPath, "*", k, -1)
+		if *outputPath != "" {
+			path := strings.Replace(*outputPath, "*", k, -1)
 			log.Printf("[INFO] save with : %v ---------------- \n", path)
 
 			var m map[string]interface{}
 			err = json.NewDecoder(reader).Decode(&m)
-			errorCheck(err)
+			if err != nil {
+				return err
+			}
 			om := fsrpl.InterpretationEachValueForTime(m)
 
 			err = repo.SaveData(ctx, path, om)
-			errorCheck(err)
+			if err != nil {
+				return err
+			}
 		}
-		// _, err = fmt.Fprint(outStream, fmt.Sprintf("%#v", m))
-		// errorCheck(err)
 	}
+	return nil
+}
+
+func main() {
+
+	app.Version(fmt.Sprintf("%s\nRev:%s", version, revision))
+	if _, err := app.Parse(os.Args[1:]); err != nil {
+		app.FatalUsage(fmt.Sprintf("\n%s\n-------------\n", err.Error()))
+	}
+
+	// validate
+	if err := validate(); err != nil {
+		app.FatalUsage(fmt.Sprintf("\n%s\n-------------\n", err.Error()))
+	}
+
+	log.Printf("[INFO] connect firestore with: %v", crtFile)
+	if err := run(); err != nil {
+		errorExit(err)
+	}
+
+	log.Print("[INFO] success!")
 }
