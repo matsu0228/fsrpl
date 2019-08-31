@@ -12,6 +12,10 @@ Features:
 - [fsrpl](#fsrpl)
   - [DEMO](#demo)
   - [SETUP](#setup)
+    - [homebrew](#homebrew)
+    - [go get](#go-get)
+    - [Download](#download)
+    - [Firestore secret](#firestore-secret)
   - [USAGE](#usage)
     - [replicate some documents](#replicate-some-documents)
     - [export data from some documents](#export-data-from-some-documents)
@@ -26,7 +30,32 @@ replicate `specific one document` and `each documents with wildcard option`
 
 ## SETUP
 
-write later..
+### homebrew
+
+you can use `homebrew` for macOS
+
+```
+# add informal fomura
+brew tap matsu0228/homebrew-fsrpl
+
+brew install fsrpl
+```
+
+### go get
+
+
+```
+go get github.com/matsu0228/fsrpl
+```
+
+### Download
+
+
+download here to get binary.
+https://github.com/matsu0228/fsrpl/releases
+
+
+### Firestore secret
 
 - you should set firestore's secret(JSON file). You have two options.
   - set enveronment variable: `FIRESTORE_SECRET`
