@@ -1,3 +1,4 @@
 secrets/*
 bin/*
+dist/*
 !bin/README

@@ -1,0 +1,16 @@
+brews:
+  -
+    github:
+      owner: matsu0228
+      name: fsrpl
+    commit_author:
+      name: goreleaserbot
+      email: goreleaser@carlosbecker.com
+    description: "fsrpl is CloudFirestore replication tool."
+    homepage: "https://github.com/matsu0228/fsrpl"
+    dependencies:
+    install: |
+      bin.install Dir['fsrpl']
+      zsh_completion.install "misc/completions/zsh/_fsrpl"
+    test: |
+      system "#{bin}/fsrpl"
