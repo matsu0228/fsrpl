@@ -134,6 +134,14 @@ func run(mode ExecMode) error {
 
 	case ReplicateMode:
 
+		if *isDelete {
+			fmt.Printf("delete original document? \n")
+			yes := askForConfirmation()
+			if !yes {
+				log.Fatalf("%v", yes)
+			}
+		}
+
 		var destFs *fsrpl.Firestore
 		if *hasDestinationFirestore {
 			destFs, err = fsrpl.NewFirebase(ctx, *destCrtFile)

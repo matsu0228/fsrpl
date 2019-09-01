@@ -90,7 +90,7 @@ func (f *Firestore) getDocumentRefWithPath(path string) (*firestore.DocumentRef,
 
 // DeleteData :
 func (f *Firestore) DeleteData(ctx context.Context, path string) error {
-	log.Printf("[INFO] DeleteDoc() path:%v", path)
+	log.Printf("[INFO] delete document from %v", path)
 	doc, err := f.getDocumentRefWithPath(path)
 	if err != nil {
 		return err
@@ -101,7 +101,7 @@ func (f *Firestore) DeleteData(ctx context.Context, path string) error {
 
 // SaveData save with collection+document path
 func (f *Firestore) SaveData(ctx context.Context, path string, data map[string]interface{}) error {
-	log.Printf("[INFO] SaveDoc() path:%v w/ %#v", path, data)
+	log.Printf("[INFO] save to %v. document of %#v", path, data)
 	doc, err := f.getDocumentRefWithPath(path)
 	if err != nil {
 		return err
