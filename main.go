@@ -10,6 +10,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/hashicorp/logutils"
 	fsrpl "github.com/matsu0228/fsrpl/pkg"
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
 )
@@ -20,6 +21,8 @@ var (
 	revision = "0"
 
 	app         = kingpin.New("fsrpl", "A firestore replication tool.")
+	isVerbose   = app.Flag("verbose", "show logs with verbose level").Default("false").Bool()
+	isDebug     = app.Flag("debug", "show logs with debug level").Default("false").Bool()
 	crtFile     = app.Flag("secret", "set secrets json for firestore").Default("").String()
 	destCrtFile = app.Flag("dest-secret", "set secrets json for destination firestore").Default("").String()
 	inputPath   = app.Arg("targetPath", "target firestore path(containts collection's path and documentID)").Default("").String()
@@ -122,7 +125,7 @@ func run(mode ExecMode) error {
 
 	case ExportMode:
 		for k, reader := range readerList {
-			log.Printf("[INFO] write with : %v ----------------\n", k)
+			log.Printf("[DEBUG] write outStream with : %v ----------------\n", k)
 			_, err = io.Copy(outStream, reader)
 			if err != nil {
 				return err
@@ -142,7 +145,7 @@ func run(mode ExecMode) error {
 		for k, reader := range readerList {
 			path := strings.Replace(*outputPath, "*", k, -1)
 			srcPath := strings.Replace(*inputPath, "*", k, -1)
-			log.Printf("[INFO] save with : %v from %v ---------------- \n", path, srcPath)
+			log.Printf("[DEBUG] save with : %v from %v ---------------- \n", path, srcPath)
 
 			var m map[string]interface{}
 			err = json.NewDecoder(reader).Decode(&m)
@@ -178,10 +181,34 @@ func run(mode ExecMode) error {
 
 func main() {
 
-	app.Version(fmt.Sprintf("%s\nRev:%s", version, revision))
+	app.Version(version)
 	if _, err := app.Parse(os.Args[1:]); err != nil {
 		app.FatalUsage(fmt.Sprintf("\n%s\n-------------\n", err.Error()))
 	}
+
+	// set logger
+	filter := &logutils.LevelFilter{
+		Levels:   []logutils.LogLevel{"DEBUG", "INFO", "WARN", "ERROR"},
+		MinLevel: logutils.LogLevel("ERROR"),
+		Writer:   os.Stderr,
+	}
+	log.SetFlags(log.Ltime)
+	if *isVerbose {
+		filter = &logutils.LevelFilter{
+			Levels:   []logutils.LogLevel{"DEBUG", "INFO", "WARN", "ERROR"},
+			MinLevel: logutils.LogLevel("INFO"),
+			Writer:   os.Stderr,
+		}
+	}
+	if *isDebug {
+		filter = &logutils.LevelFilter{
+			Levels:   []logutils.LogLevel{"DEBUG", "INFO", "WARN", "ERROR"},
+			MinLevel: logutils.LogLevel("DEBUG"),
+			Writer:   os.Stderr,
+		}
+		log.SetFlags(log.Ltime | log.Lshortfile)
+	}
+	log.SetOutput(filter)
 
 	// validate
 	mode, err := validate()
