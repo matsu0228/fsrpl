@@ -15,7 +15,7 @@ Features:
     - [homebrew](#homebrew)
     - [go get](#go-get)
     - [Download](#download)
-    - [Firestore secret](#firestore-secret)
+    - [Firestore private key](#firestore-private-key)
   - [USAGE](#usage)
     - [replicate some documents](#replicate-some-documents)
     - [export data from some documents](#export-data-from-some-documents)
@@ -55,9 +55,11 @@ download here to get binary.
 https://github.com/matsu0228/fsrpl/releases
 
 
-### Firestore secret
+### Firestore private key
 
-- you should set firestore's secret(JSON file). You have two options.
+- you should set firestore's private key(JSON file).
+  - you can get private key from console. see [official document](https://firebase.google.com/docs/admin/setup?authuser=0)
+- You have two options.
   - set enveronment variable: `FIRESTORE_SECRET`
   - use `--secret` option
 
