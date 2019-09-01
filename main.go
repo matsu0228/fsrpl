@@ -27,6 +27,9 @@ var (
 	outputPath       = app.Flag("destPath", "destination firestore path(containts collection's path and documentID)").Short('d').Default("").String()
 	isExportFile     = app.Flag("isExportFile", "output json data to file").Short('f').Default("false").Bool()
 	isOutputGoStruct = app.Flag("isGoStruct", "output go struct to stdout").Short('g').Default("false").Bool()
+
+	// option
+	isDelete = app.Flag("delete", "delete source document after replication").Default("false").Bool()
 )
 
 func errorCheck(err error) {
@@ -61,6 +64,7 @@ func run() error {
 	}
 
 	outStream := os.Stdout
+	// 3. generate Go struct from some document
 	if *isOutputGoStruct {
 		err = repo.ToStruct(ctx, *inputPath, outStream)
 		return err
@@ -73,6 +77,7 @@ func run() error {
 
 	for k, reader := range readerList {
 
+		// 2. export data from some documents
 		if *isExportFile {
 			log.Printf("[INFO] write with : %v ----------------\n", k)
 			_, err = io.Copy(outStream, reader)
@@ -82,9 +87,11 @@ func run() error {
 			continue
 		}
 
+		// 1. replicate some documents
 		if *outputPath != "" {
 			path := strings.Replace(*outputPath, "*", k, -1)
-			log.Printf("[INFO] save with : %v ---------------- \n", path)
+			srcPath := strings.Replace(*inputPath, "*", k, -1)
+			log.Printf("[INFO] save with : %v from %v ---------------- \n", path, srcPath)
 
 			var m map[string]interface{}
 			err = json.NewDecoder(reader).Decode(&m)
@@ -96,6 +103,13 @@ func run() error {
 			err = repo.SaveData(ctx, path, om)
 			if err != nil {
 				return err
+			}
+
+			if *isDelete {
+				err = repo.DeleteData(ctx, srcPath)
+				if err != nil {
+					return err
+				}
 			}
 		}
 	}
@@ -114,7 +128,6 @@ func main() {
 		app.FatalUsage(fmt.Sprintf("\n%s\n-------------\n", err.Error()))
 	}
 
-	log.Printf("[INFO] connect firestore with: %v", crtFile)
 	if err := run(); err != nil {
 		errorExit(err)
 	}

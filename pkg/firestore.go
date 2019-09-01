@@ -20,29 +20,50 @@ import (
 // Firestore is datastore object
 type Firestore struct {
 	firebase        *firebase.App
-	firestoreClient *firestore.Client
+	FirestoreClient *firestore.Client
 }
 
 // NewFirebase is constoractor. connect firebase and firestore
 func NewFirebase(ctx context.Context, crtFile string) (*Firestore, error) {
 
-	_, err := os.Stat(crtFile)
+	var app *firebase.App
+	var client *firestore.Client
+	var err error
+	log.Printf("[INFO] connect firestore with: %v", crtFile)
+
+	if crtFile == "" { // local emurator などへの接続時
+		app, err = firebase.NewApp(ctx, nil)
+		if err != nil {
+			return nil, err
+		}
+		client, err = app.Firestore(ctx)
+		if err != nil {
+			return nil, err
+		}
+		return &Firestore{
+			firebase:        app,
+			FirestoreClient: client,
+		}, nil
+	}
+
+	_, err = os.Stat(crtFile)
 	if err != nil {
 		return nil, errors.Wrapf(err, "not found secret file:%v", crtFile)
 	}
+
 	opt := option.WithCredentialsFile(crtFile)
-	app, err := firebase.NewApp(context.Background(), nil, opt)
+	app, err = firebase.NewApp(context.Background(), nil, opt)
 	if err != nil {
 		return nil, err
 	}
-	client, err := app.Firestore(ctx)
+	client, err = app.Firestore(ctx)
 	if err != nil {
 		return nil, err
 	}
 
 	return &Firestore{
 		firebase:        app,
-		firestoreClient: client,
+		FirestoreClient: client,
 	}, nil
 }
 
@@ -57,15 +78,34 @@ func (f *Firestore) parsePath(path string) (string, string, error) {
 	return strings.Join(paths[:len(paths)-1], sep), paths[len(paths)-1], nil
 }
 
-// SaveData :
-func (f *Firestore) SaveData(ctx context.Context, path string, data map[string]interface{}) error {
+// getDocumentRefWithPath get documentRef with collection+document path
+func (f *Firestore) getDocumentRefWithPath(path string) (*firestore.DocumentRef, error) {
 	colID, docID, err := f.parsePath(path)
+	if err != nil {
+		return nil, err
+	}
+	doc := f.FirestoreClient.Collection(colID).Doc(docID)
+	return doc, nil
+}
+
+// DeleteData :
+func (f *Firestore) DeleteData(ctx context.Context, path string) error {
+	log.Printf("[INFO] DeleteDoc() path:%v", path)
+	doc, err := f.getDocumentRefWithPath(path)
 	if err != nil {
 		return err
 	}
+	_, err = doc.Delete(ctx)
+	return err
+}
+
+// SaveData save with collection+document path
+func (f *Firestore) SaveData(ctx context.Context, path string, data map[string]interface{}) error {
 	log.Printf("[INFO] SaveDoc() path:%v w/ %#v", path, data)
-	doc := f.firestoreClient.Collection(colID).Doc(docID)
-	log.Printf("[INFO] SaveDoc() doc path:%v ", doc.Path)
+	doc, err := f.getDocumentRefWithPath(path)
+	if err != nil {
+		return err
+	}
 	_, err = doc.Set(ctx, data)
 	// log.Printf("[INFO] SaveDoc() result %#v.  path:%v ", wr, path)
 	return err
@@ -92,7 +132,7 @@ func (f *Firestore) Scan(ctx context.Context, path string) (map[string]io.Reader
 	}
 
 	if docID == "*" { // wildcard
-		dRefs, err := f.firestoreClient.Collection(colID).DocumentRefs(ctx).GetAll()
+		dRefs, err := f.FirestoreClient.Collection(colID).DocumentRefs(ctx).GetAll()
 		if err != nil {
 			return rs, err
 		}
@@ -112,7 +152,7 @@ func (f *Firestore) Scan(ctx context.Context, path string) (map[string]io.Reader
 		return rs, err
 	}
 
-	snap, err := f.firestoreClient.Collection(colID).Doc(docID).Get(ctx)
+	snap, err := f.FirestoreClient.Collection(colID).Doc(docID).Get(ctx)
 	if err != nil {
 		return nil, err
 	}
