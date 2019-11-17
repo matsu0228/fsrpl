@@ -19,6 +19,7 @@ Features:
   - [USAGE](#usage)
     - [replicate some documents](#replicate-some-documents)
     - [export data from some documents](#export-data-from-some-documents)
+    - [import data from some JSON files](#import-data-from-some-json-files)
     - [generate Go struct from some document](#generate-go-struct-from-some-document)
     <!-- /MarkdownTOC -->
 
@@ -83,11 +84,12 @@ fsrpl "inputData/*" -d "outputData/*"
 - export data from some documents with `-f` option.
 
 ```
-fsrpl [input document path] [output document path]
+fsrpl [input document path] -f [json file directory path]
 
 e.g.
 
-fsrpl "inputData/user" -f | jq
+fsrpl "inputData/user" -f ./
+cat user.json
 {
   "_created_at": "2019-08-26T05:00:00Z",
   "coin": 0,
@@ -105,9 +107,9 @@ fsrpl "inputData/user" -f | jq
 
 
 
-fsrpl "inputData/*" -f | jq
+fsrpl "inputData/*" -f ./
 
-
+cat cat.json | jq
 {
   "_created_at": "2019-08-26T05:00:00Z",
   "coin": 0,
@@ -122,12 +124,32 @@ fsrpl "inputData/*" -f | jq
   },
   "name": "cat"
 }
+
+cat dog.json | jq
 {
   "name": "dog"
   ...
 }
 ...
 
+```
+
+
+### import data from some JSON files
+
+- import data from JSON files with `-i` option.
+
+
+```
+fsrpl [import document path] -i [inport JSON file directory path]
+
+e.g.
+
+fsrpl "importData/*" -i "./" --verbose
+
+[INFO] save to importData / dog. document of map[string]interface {}{"_created_at":time.Time{wall:0x0, ext:63702392400, loc:(*time.Location)(nil)}, "coin":0, "favorites":[]interface {}{"1", "2"}, "isDeleted":true, "mapData":map[string]interface {}{"b":true, "name":"mName"}, "name":"dog"}
+...
+[INFO] import:user of map[string]interface {}{"favorites":[]interface {}{"1", "2"}, "isDeleted":true, "mapData":map[string]interface {}{"b":true, "name":"mName"}, "name":"user", "_created_at":time.Time{wall:0x0, ext:63702392400, loc:(*time.Location)(nil)}, "coin":0}
 ```
 
 ### generate Go struct from some document

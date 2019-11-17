@@ -118,15 +118,32 @@ func (f *Firestore) DeleteData(ctx context.Context, path string) error {
 	return err
 }
 
-// SaveData save with collection+document path
-func (f *Firestore) SaveData(ctx context.Context, path string, data map[string]interface{}) error {
-	log.Printf("[INFO] save to %v. document of %#v", path, data)
-	doc, err := f.getDocumentRefWithPath(path)
+// SaveDataWithSubdocumentID save with collection+document path and subDocumentID
+func (f *Firestore) SaveDataWithSubdocumentID(ctx context.Context, path, subDocID string, data map[string]interface{}) error {
+	colID, docID, err := f.parsePath(path)
 	if err != nil {
 		return err
 	}
-	_, err = doc.Set(ctx, data)
-	// log.Printf("[INFO] SaveDoc() result %#v.  path:%v ", wr, path)
+	if docID == "*" {
+		docID = subDocID
+	}
+	return f.ImportData(ctx, colID, docID, data)
+}
+
+// SaveData save with collection+document path
+func (f *Firestore) SaveData(ctx context.Context, path string, data map[string]interface{}) error {
+	colID, docID, err := f.parsePath(path)
+	if err != nil {
+		return err
+	}
+	return f.ImportData(ctx, colID, docID, data)
+}
+
+// ImportData setdata
+func (f *Firestore) ImportData(ctx context.Context, colID, docID string, data map[string]interface{}) error {
+	log.Printf("[INFO] save to %v / %v. document of %#v", colID, docID, data)
+	doc := f.FirestoreClient.Collection(colID).Doc(docID)
+	_, err := doc.Set(ctx, data)
 	return err
 }
 

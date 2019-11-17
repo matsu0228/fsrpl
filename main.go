@@ -8,6 +8,8 @@ import (
 	"io"
 	"log"
 	"os"
+	"path"
+	"path/filepath"
 	"strings"
 
 	"github.com/hashicorp/logutils"
@@ -27,9 +29,11 @@ var (
 	destCrtFile = app.Flag("dest-secret", "set secrets json for destination firestore").Default("").String()
 	inputPath   = app.Arg("targetPath", "target firestore path(containts collection's path and documentID)").Default("").String()
 
+	// import
+	importFilePath = app.Flag("importFilePath", "input directory of json files").Short('i').Default("").String()
 	// output
 	outputPath       = app.Flag("destPath", "destination firestore path(containts collection's path and documentID)").Short('d').Default("").String()
-	isExportFile     = app.Flag("isExportFile", "output json data to file").Short('f').Default("false").Bool()
+	exportFilePath   = app.Flag("exportFilePath", "output directory as json file").Short('f').Default("").String()
 	isOutputGoStruct = app.Flag("isGoStruct", "output go struct to stdout").Short('g').Default("false").Bool()
 
 	// option
@@ -43,11 +47,13 @@ type ExecMode int
 const (
 	// Unknown is Undefined mode
 	Unknown ExecMode = iota
-	// ReplicateMode is mode for replicate
+	// ReplicateMode is mode for replicating from some firestore to another firestore
 	ReplicateMode
-	// ExportMode is mode
+	// ExportMode is mode of export from firestore to json file
 	ExportMode
-	// GenerateStructMode is mode
+	// ImportMode is mode of importing from json files to firestore
+	ImportMode
+	// GenerateStructMode is mode generating Go Struct
 	GenerateStructMode
 )
 
@@ -82,22 +88,99 @@ func validate() (ExecMode, error) {
 		}
 	}
 
+	if *importFilePath != "" {
+		return ImportMode, nil
+	}
 	if *outputPath != "" {
 		return ReplicateMode, nil
 	}
-	if *isExportFile {
+	if *exportFilePath != "" {
 		return ExportMode, nil
 	}
-	// 3. generate Go struct from some document
-	if *isOutputGoStruct {
-		return GenerateStructMode, nil
-	}
-	// 3. generate Go struct from some document
 	if *isOutputGoStruct {
 		return GenerateStructMode, nil
 	}
 
 	return Unknown, nil
+}
+
+// ImportDataFromJSONFiles import from json
+func ImportDataFromJSONFiles(ctx context.Context, fs *fsrpl.Firestore, importPath, exportPath string) error {
+
+	err := filepath.Walk(importPath, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		if info.IsDir() {
+			return nil
+		}
+		fn := info.Name()
+		basefn := filepath.Base(fn[:len(fn)-len(filepath.Ext(fn))])
+
+		var org map[string]interface{}
+		file, err := os.Open(path)
+		if err := json.NewDecoder(file).Decode(&org); err != nil {
+			return err
+		}
+		documentData := fsrpl.InterpretationEachValueForTime(org)
+
+		log.Printf("[INFO] import:%v of %#v", basefn, documentData)
+		return fs.SaveDataWithSubdocumentID(ctx, exportPath, basefn, documentData)
+	})
+	return err
+}
+
+// ReplicateData from some firestore path to another firestore path
+func ReplicateData(ctx context.Context, fs *fsrpl.Firestore, readerList map[string]io.Reader) error {
+	var err error
+	if *isDelete {
+		fmt.Printf("delete original document? \n")
+		yes := askForConfirmation()
+		if !yes {
+			return errors.New("exit")
+		}
+	}
+
+	var destFs *fsrpl.Firestore
+	if *hasDestinationFirestore {
+		destFs, err = fsrpl.NewFirebase(ctx, *destCrtFile)
+		if err != nil {
+			return err
+		}
+	}
+
+	for k, reader := range readerList {
+		path := strings.Replace(*outputPath, "*", k, -1)
+		srcPath := strings.Replace(*inputPath, "*", k, -1)
+		log.Printf("[DEBUG] save with : %v from %v ---------------- \n", path, srcPath)
+
+		var m map[string]interface{}
+		err = json.NewDecoder(reader).Decode(&m)
+		if err != nil {
+			return err
+		}
+		om := fsrpl.InterpretationEachValueForTime(m)
+
+		if *hasDestinationFirestore {
+			err = destFs.SaveData(ctx, path, om)
+			if err != nil {
+				return err
+			}
+		} else {
+			err = fs.SaveData(ctx, path, om)
+			if err != nil {
+				return err
+			}
+		}
+
+		if *isDelete {
+			err = fs.DeleteData(ctx, srcPath)
+			if err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 func run(mode ExecMode) error {
@@ -120,6 +203,12 @@ func run(mode ExecMode) error {
 	}
 
 	switch mode {
+
+	case ImportMode:
+		if err := ImportDataFromJSONFiles(ctx, fs, *importFilePath, *inputPath); err != nil {
+			return err
+		}
+
 	case GenerateStructMode:
 		err = fs.ToStruct(ctx, *inputPath, outStream)
 		return err
@@ -127,60 +216,21 @@ func run(mode ExecMode) error {
 	case ExportMode:
 		for k, reader := range readerList {
 			log.Printf("[DEBUG] write outStream with : %v ----------------\n", k)
-			_, err = io.Copy(outStream, reader)
+
+			fn := path.Join(*exportFilePath, k+".json")
+			file, err := os.OpenFile(fn, os.O_WRONLY|os.O_CREATE, 0666)
+			if err != nil {
+				return err
+			}
+			_, err = io.Copy(file, reader)
 			if err != nil {
 				return err
 			}
 		}
 
 	case ReplicateMode:
-
-		if *isDelete {
-			fmt.Printf("delete original document? \n")
-			yes := askForConfirmation()
-			if !yes {
-				log.Fatalf("%v", yes)
-			}
-		}
-
-		var destFs *fsrpl.Firestore
-		if *hasDestinationFirestore {
-			destFs, err = fsrpl.NewFirebase(ctx, *destCrtFile)
-			if err != nil {
-				return err
-			}
-		}
-
-		for k, reader := range readerList {
-			path := strings.Replace(*outputPath, "*", k, -1)
-			srcPath := strings.Replace(*inputPath, "*", k, -1)
-			log.Printf("[DEBUG] save with : %v from %v ---------------- \n", path, srcPath)
-
-			var m map[string]interface{}
-			err = json.NewDecoder(reader).Decode(&m)
-			if err != nil {
-				return err
-			}
-			om := fsrpl.InterpretationEachValueForTime(m)
-
-			if *hasDestinationFirestore {
-				err = destFs.SaveData(ctx, path, om)
-				if err != nil {
-					return err
-				}
-			} else {
-				err = fs.SaveData(ctx, path, om)
-				if err != nil {
-					return err
-				}
-			}
-
-			if *isDelete {
-				err = fs.DeleteData(ctx, srcPath)
-				if err != nil {
-					return err
-				}
-			}
+		if err = ReplicateData(ctx, fs, readerList); err != nil {
+			return err
 		}
 	default:
 		log.Printf("[INFO] dont set execute mode: %v from  \n", mode)
@@ -208,6 +258,7 @@ func main() {
 			MinLevel: logutils.LogLevel("INFO"),
 			Writer:   os.Stderr,
 		}
+		log.SetFlags(0)
 	}
 	if *isDebug {
 		filter = &logutils.LevelFilter{
