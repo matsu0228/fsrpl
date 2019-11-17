@@ -4,10 +4,12 @@ build: clean
 	go build  -o ./bin/$(BINARY_NAME)
 
 test:
-	go test ./... -v
+	gcloud beta emulators firestore start --host-port=localhost:8812 &
 	golint ./...
 	go vet ./...
 	errcheck ./...
+	# fs emulator
+	export FIRESTORE_EMULATOR_HOST=localhost:8812; go test ./... -v
 
 
 release:

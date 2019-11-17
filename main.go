@@ -108,6 +108,7 @@ func run(mode ExecMode) error {
 	if err != nil {
 		return err
 	}
+	log.Printf("[DEBUG] projectID: %v", fs.ProjectID)
 
 	outStream := os.Stdout
 

@@ -2,3 +2,4 @@ secrets/*
 bin/*
 dist/*
 !bin/README
+*.json

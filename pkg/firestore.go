@@ -13,6 +13,7 @@ import (
 	"cloud.google.com/go/firestore"
 	firebase "firebase.google.com/go"
 	"github.com/ChimeraCoder/gojson"
+	"github.com/antonholmquist/jason"
 	"github.com/pkg/errors"
 	"google.golang.org/api/option"
 )
@@ -21,6 +22,19 @@ import (
 type Firestore struct {
 	firebase        *firebase.App
 	FirestoreClient *firestore.Client
+	ProjectID       string
+}
+
+func loadProjectIDFromCredFile(credFilePath string) (string, error) {
+	file, err := os.Open(credFilePath)
+	if err != nil {
+		return "", err
+	}
+	v, err := jason.NewObjectFromReader(file)
+	if err != nil {
+		return "", err
+	}
+	return v.GetString("project_id")
 }
 
 // NewFirebase is constoractor. connect firebase and firestore
@@ -29,6 +43,7 @@ func NewFirebase(ctx context.Context, crtFile string) (*Firestore, error) {
 	var app *firebase.App
 	var client *firestore.Client
 	var err error
+	var projectID string
 	log.Printf("[INFO] connect firestore with: %v", crtFile)
 
 	if crtFile == "" { // local emurator などへの接続時
@@ -51,6 +66,9 @@ func NewFirebase(ctx context.Context, crtFile string) (*Firestore, error) {
 		return nil, errors.Wrapf(err, "not found secret file:%v", crtFile)
 	}
 
+	if pjID, err := loadProjectIDFromCredFile(crtFile); err == nil {
+		projectID = pjID
+	}
 	opt := option.WithCredentialsFile(crtFile)
 	app, err = firebase.NewApp(context.Background(), nil, opt)
 	if err != nil {
@@ -64,6 +82,7 @@ func NewFirebase(ctx context.Context, crtFile string) (*Firestore, error) {
 	return &Firestore{
 		firebase:        app,
 		FirestoreClient: client,
+		ProjectID:       projectID,
 	}, nil
 }
 
