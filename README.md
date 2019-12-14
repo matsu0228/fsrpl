@@ -1,12 +1,18 @@
 # fsrpl
 
+English | [日本語](https://github.com/matsu0228/fsrpl/blob/master/README_ja.md)
+
 fsrpl is CloudFirestore replication tool.
 
 Features:
 
-- Replicate CloudFirestore's some node data to another node.
-- Make Go struct from CloudFirestore's some node data.
+- Replicate document data from some node to another node. With Wildcar option, Replicate all document data from some collection node to another collenction node.
+- Replicate document data from some projectId's Firestore to another projectId's Firestore.
+- Backup document data from some node to local JSON file, and Restore  document data from local JSON file.
 
+This tool is Beta version, so if use it BE CAREFUL to [Limitation](#limitation)
+
+Table Of Contents:
 <!-- MarkdownTOC -->
 
 - [fsrpl](#fsrpl)
@@ -21,6 +27,8 @@ Features:
     - [export data from some documents](#export-data-from-some-documents)
     - [import data from some JSON files](#import-data-from-some-json-files)
     - [generate Go struct from some document](#generate-go-struct-from-some-document)
+  - [Limitation](#limitation)
+    - [Supporting data-types](#supporting-data-types)
     <!-- /MarkdownTOC -->
 
 ## DEMO
@@ -175,4 +183,30 @@ type JsonStruct struct {
 	Name string `json:"name"`
 }
 
+```
+
+## Limitation
+
+### Supporting data-types
+
+
+Firestore's data-types list is [here (official document)](https://firebase.google.com/docs/firestore/manage-data/data-types) .
+This tool ONLY support below data-types.
+
+```
+- Boolean
+- Text string
+- Integer
+- Array
+- Map
+- Date and time
+- Null
+- Floating-point number
+```
+
+At this time, the following data types are not supported, so please be careful when using them. It will be supported in the future.
+```
+- Bytes
+- Geographical point
+- Reference
 ```
