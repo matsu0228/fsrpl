@@ -1,0 +1,38 @@
+name: fsrpl_ci
+
+on:
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      # - run: mkdir -p ./go/src/github.com/spolive-team
+      # - run: echo $PWD
+      - uses: actions/checkout@v1
+        with:
+          path: ./go/src/github.com/spolive-team/api
+      - uses: actions/setup-go@v1
+        with:
+          go-version: '1.11'
+
+      - name: cache
+        uses: actions/cache@v1
+        with:
+          path: ~/go/pkg/mod
+          key: ${{ runner.os }}-go-${{ hashFiles('**/go.sum') }}
+          restore-keys: |
+            ${{ runner.os }}-go-
+      - name: download modules
+        # キャッシュが保存されていればそれを使う
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: go mod download
+        # golang-ci
+      - name: install lint
+        run: curl -sfL https://install.goreleaser.com/github.com/golangci/golangci-lint.sh | sh -s -- -b $(go env GOPATH)/bin v1.18.0
+      - name: lint
+        run: $(go env GOPATH)/bin/golangci-lint run
+      - name: test
+        run: go test ./... -v
