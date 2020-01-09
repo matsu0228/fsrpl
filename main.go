@@ -19,8 +19,7 @@ import (
 
 var (
 	// version
-	version  = "0.0.1"
-	revision = "0"
+	version = "0.0.1"
 
 	app         = kingpin.New("fsrpl", "A firestore replication tool.")
 	isVerbose   = app.Flag("verbose", "show logs with verbose level").Default("false").Bool()
@@ -56,12 +55,6 @@ const (
 	// GenerateStructMode is mode generating Go Struct
 	GenerateStructMode
 )
-
-func errorCheck(err error) {
-	if err != nil {
-		errorExit(err)
-	}
-}
 
 func errorExit(err error) {
 	log.Fatalf("[ERROR] %v", err)
@@ -119,6 +112,9 @@ func ImportDataFromJSONFiles(ctx context.Context, fs *fsrpl.Firestore, importPat
 
 		var org map[string]interface{}
 		file, err := os.Open(path)
+		if err != nil {
+			return nil
+		}
 		if err := json.NewDecoder(file).Decode(&org); err != nil {
 			return err
 		}

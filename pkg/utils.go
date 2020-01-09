@@ -18,13 +18,3 @@ func InterpretationEachValueForTime(mps map[string]interface{}) map[string]inter
 	}
 	return mps
 }
-
-func compactFromStringSlice(arr []string) []string {
-	results := []string{}
-	for _, a := range arr {
-		if a != "" {
-			results = append(results, a)
-		}
-	}
-	return results
-}

@@ -9,7 +9,7 @@ test:
 	go vet ./...
 	errcheck ./...
 	# fs emulator
-	export FIRESTORE_EMULATOR_HOST=localhost:8812; go test ./... -v
+	export FIRESTORE_EMULATOR_HOST=localhost:8812; go test ./... -v -tags=integration
 
 
 release:

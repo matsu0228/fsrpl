@@ -201,8 +201,7 @@ func (f *Firestore) Scan(ctx context.Context, path string) (map[string]io.Reader
 
 // ReaderToStruct :
 func ReaderToStruct(reader io.Reader, outStream io.Writer) error {
-	var parser gojson.Parser
-	parser = func(input io.Reader) (interface{}, error) {
+	var parser gojson.Parser = func(input io.Reader) (interface{}, error) {
 		var result interface{}
 		if err := json.NewDecoder(input).Decode(&result); err != nil {
 			return nil, err
