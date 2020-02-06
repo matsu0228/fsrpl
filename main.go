@@ -179,6 +179,21 @@ func ReplicateData(ctx context.Context, fs *fsrpl.Firestore, readerList map[stri
 	return nil
 }
 
+func writeFile(fn string, contents io.Reader) error {
+	file, err := os.OpenFile(fn, os.O_WRONLY|os.O_CREATE, 0666)
+	defer func() {
+		err := file.Close()
+		if err != nil {
+			log.Printf("[WARN] cant close:%v", err)
+		}
+	}()
+	if err != nil {
+		return err
+	}
+	_, err = io.Copy(file, contents)
+	return err
+}
+
 func run(mode ExecMode) error {
 
 	var readerList map[string]io.Reader
@@ -210,19 +225,19 @@ func run(mode ExecMode) error {
 		return err
 
 	case ExportMode:
+		errs := []error{}
 		for k, reader := range readerList {
 			log.Printf("[DEBUG] write outStream with : %v ----------------\n", k)
 
 			fn := path.Join(*exportFilePath, k+".json")
-			file, err := os.OpenFile(fn, os.O_WRONLY|os.O_CREATE, 0666)
-			if err != nil {
-				return err
-			}
-			_, err = io.Copy(file, reader)
-			if err != nil {
-				return err
+			if err := writeFile(fn, reader); err != nil {
+				errs = append(errs, err)
 			}
 		}
+		if len(errs) >= 1 {
+			return fmt.Errorf("err: %#v", errs)
+		}
+		return nil
 
 	case ReplicateMode:
 		if err = ReplicateData(ctx, fs, readerList); err != nil {
