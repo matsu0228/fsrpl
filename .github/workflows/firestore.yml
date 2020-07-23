@@ -1,0 +1,23 @@
+name: firestore emulator
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v1
+      - name: docker-compose up
+        run: docker-compose up -d
+        working-directory: emulator
+      - name: wait port
+        run: bash -uvx ./wait.sh
+        working-directory: emulator
+        env:
+          FIRESTORE_EMULATOR_HOST: 0.0.0.0:8080
+      - name: go test
+        run: |
+          go test ./... -v -tags=integration
+        env:
+          FIRESTORE_EMULATOR_HOST: 0.0.0.0:8080
