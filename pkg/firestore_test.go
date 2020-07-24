@@ -39,7 +39,7 @@ func TestMain(m *testing.M) {
 
 	fsEmulator, err = connectFirebaseEmulator()
 	if err != nil {
-		log.Fatalf("[ERROR] cant connect firebase emulator")
+		log.Fatalf("[ERROR] cant connect firebase emulator: %v", err)
 	}
 
 	err = fsEmulator.importTestdata()
@@ -60,11 +60,7 @@ func connectFirebaseEmulator() (*Firestore, error) {
 	var err error
 
 	ctx := context.Background()
-	app, err = firebase.NewApp(ctx, nil)
-	if err != nil {
-		return nil, err
-	}
-	client, err = app.Firestore(ctx)
+	client, err = firestore.NewClient(ctx, "fs-test")
 	if err != nil {
 		return nil, err
 	}
