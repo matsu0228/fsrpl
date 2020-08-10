@@ -4,13 +4,12 @@ import (
 	"context"
 	"encoding/json"
 	"io"
-	"log"
 	"os"
 	"path/filepath"
 )
 
 // ImportDataFromJSONFiles import from json
-func ImportDataFromJSONFiles(ctx context.Context, fs *Firestore, importPath, exportPath string) error {
+func ImportDataFromJSONFiles(ctx context.Context, opt *Option, fs *Firestore, importPath, exportPath string) error {
 
 	err := filepath.Walk(importPath, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
@@ -32,8 +31,8 @@ func ImportDataFromJSONFiles(ctx context.Context, fs *Firestore, importPath, exp
 		}
 		documentData := InterpretationEachValueForTime(org)
 
-		log.Printf("[INFO] import:%v of %#v", basefn, documentData)
-		return fs.SaveDataWithSubdocumentID(ctx, exportPath, basefn, documentData)
+		Debugf("import:%v to %v data: %#v", basefn, exportPath, documentData)
+		return fs.SaveDataWithSubdocumentID(ctx, opt, exportPath, basefn, documentData)
 	})
 	return err
 }
@@ -41,9 +40,8 @@ func ImportDataFromJSONFiles(ctx context.Context, fs *Firestore, importPath, exp
 func writeFile(fn string, contents io.Reader) error {
 	file, err := os.OpenFile(fn, os.O_WRONLY|os.O_CREATE, 0666)
 	defer func() {
-		err := file.Close()
-		if err != nil {
-			log.Printf("[WARN] cant close:%v", err)
+		if cErr := file.Close(); cErr != nil {
+			Debugf("cant close:%v", cErr)
 		}
 	}()
 	if err != nil {

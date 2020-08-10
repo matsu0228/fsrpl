@@ -1,4 +1,4 @@
-# fsrpl
+# fsrpl ![test](https://github.com/matsu0228/fsrpl/workflows/test/badge.svg)
 
 [English](https://github.com/matsu0228/fsrpl/blob/master/README.md) | 日本語
 

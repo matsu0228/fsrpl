@@ -7,14 +7,12 @@ build: clean
 
 lint:
 	golangci-lint run ./...
-	go vet ./...
 
 test-local:
 	go test ./...
 
 test: lint test-local
-	export FIRESTORE_EMULATOR_HOST=0.0.0.0:8080 
-	go test ./... -tags=integration
+	FIRESTORE_EMULATOR_HOST=0.0.0.0:8080 go test ./... -tags=integration
 
 emulator:
 	cd emulator && docker-compose up -d && cd ..

@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
-	"log"
 	"os"
 	"strings"
 
@@ -36,14 +35,15 @@ func loadProjectIDFromCredFile(credFilePath string) (string, error) {
 }
 
 // NewFirebase is constoractor. connect firebase and firestore
-func NewFirebase(ctx context.Context, crtFile string) (*Firestore, error) {
+func NewFirebase(ctx context.Context, optCli *Option, crtFile string) (*Firestore, error) {
 
 	var err error
+	var fs *firestore.Client
 	var projectID string
-	log.Printf("[INFO] connect firestore with: %v", crtFile)
+	Debugf("connect firestore with: %v", crtFile)
 
 	if crtFile == "" { // local emurator などへの接続時
-		fs, err := firestore.NewClient(ctx, "emulator")
+		fs, err = firestore.NewClient(ctx, "emulator")
 		if err != nil {
 			return nil, err
 		}
@@ -57,15 +57,16 @@ func NewFirebase(ctx context.Context, crtFile string) (*Firestore, error) {
 		return nil, errors.Wrapf(err, "not found secret file:%v", crtFile)
 	}
 
-	if pjID, err := loadProjectIDFromCredFile(crtFile); err == nil {
+	if pjID, loadErr := loadProjectIDFromCredFile(crtFile); loadErr == nil {
 		projectID = pjID
 	}
 	opt := option.WithCredentialsFile(crtFile)
-	fs, err := firestore.NewClient(ctx, projectID, opt)
+	fs, err = firestore.NewClient(ctx, projectID, opt)
 	if err != nil {
 		return nil, err
 	}
 
+	PrintInfof(optCli.Stdout, "\nconnected firestore (projectID: %v) \n\n", highlight(projectID))
 	return &Firestore{
 		Client:    fs,
 		ProjectID: projectID,
@@ -94,8 +95,8 @@ func (f *Firestore) getDocumentRefWithPath(path string) (*firestore.DocumentRef,
 }
 
 // DeleteData :
-func (f *Firestore) DeleteData(ctx context.Context, path string) error {
-	log.Printf("[INFO] delete document from %v", path)
+func (f *Firestore) DeleteData(ctx context.Context, opt *Option, path string) error {
+	PrintInfof(opt.Stdout, "delete document from %v \n", path)
 	doc, err := f.getDocumentRefWithPath(path)
 	if err != nil {
 		return err
@@ -105,7 +106,7 @@ func (f *Firestore) DeleteData(ctx context.Context, path string) error {
 }
 
 // SaveDataWithSubdocumentID save with collection+document path and subDocumentID
-func (f *Firestore) SaveDataWithSubdocumentID(ctx context.Context, path, subDocID string, data map[string]interface{}) error {
+func (f *Firestore) SaveDataWithSubdocumentID(ctx context.Context, opt *Option, path, subDocID string, data map[string]interface{}) error {
 	colID, docID, err := f.parsePath(path)
 	if err != nil {
 		return err
@@ -113,21 +114,21 @@ func (f *Firestore) SaveDataWithSubdocumentID(ctx context.Context, path, subDocI
 	if docID == "*" {
 		docID = subDocID
 	}
-	return f.ImportData(ctx, colID, docID, data)
+	return f.ImportData(ctx, opt, colID, docID, data)
 }
 
 // SaveData save with collection+document path
-func (f *Firestore) SaveData(ctx context.Context, path string, data map[string]interface{}) error {
+func (f *Firestore) SaveData(ctx context.Context, opt *Option, path string, data map[string]interface{}) error {
 	colID, docID, err := f.parsePath(path)
 	if err != nil {
 		return err
 	}
-	return f.ImportData(ctx, colID, docID, data)
+	return f.ImportData(ctx, opt, colID, docID, data)
 }
 
 // ImportData setdata
-func (f *Firestore) ImportData(ctx context.Context, colID, docID string, data map[string]interface{}) error {
-	log.Printf("[INFO] save to %v / %v. document of %#v", colID, docID, data)
+func (f *Firestore) ImportData(ctx context.Context, opt *Option, colID, docID string, data map[string]interface{}) error {
+	PrintInfof(opt.Stdout, "save to %v/%v (doc:%v) \n\n", colID, docID, data)
 	doc := f.Client.Collection(colID).Doc(docID)
 	_, err := doc.Set(ctx, data)
 	return err
@@ -152,39 +153,47 @@ func (f *Firestore) Scan(ctx context.Context, path string) (map[string]io.Reader
 	if err != nil {
 		return rs, err
 	}
-	log.Printf("Scan() col:%v, doc:%v", colID, docID)
+	Debugf("Scan() col:%v, doc:%v", colID, docID)
 
-	if docID == "*" { // wildcard
-		dRefs, err := f.Client.Collection(colID).DocumentRefs(ctx).GetAll()
-		log.Printf("getall col:%v, doc:%v, len:%v, err:%v", colID, docID, len(dRefs), err)
-		if err != nil {
-			return rs, err
-		}
-		for _, d := range dRefs {
-			snap, err := d.Get(ctx)
-			if err != nil {
-				return rs, err
-			}
-			log.Printf("[DEBUG] id:%v, doc:%#v", d.ID, snap.Data())
-			r, err := f.dataToStream(snap.Data())
-			if err != nil {
-				return rs, err
-			}
-			rs[d.ID] = r
-		}
-
-		return rs, err
+	if docID == "*" {
+		return f.ScanAll(ctx, colID, docID)
 	}
 
 	snap, err := f.Client.Collection(colID).Doc(docID).Get(ctx)
 	if err != nil {
-		log.Printf("Get err :%v", err)
+		Debugf("Get err :%v", err)
 		return nil, err
 	}
 
 	data := snap.Data()
 	r, err := f.dataToStream(data)
 	rs[snap.Ref.ID] = r
+	return rs, err
+}
+
+// ScanAll scan stream data with all document
+func (f *Firestore) ScanAll(ctx context.Context, colID, docID string) (map[string]io.Reader, error) {
+	rs := map[string]io.Reader{}
+
+	dRefs, err := f.Client.Collection(colID).DocumentRefs(ctx).GetAll()
+	Debugf("getall col:%v, doc:%v, len:%v, err:%v", colID, docID, len(dRefs), err)
+	if err != nil {
+		return rs, err
+	}
+	for _, d := range dRefs {
+		var snap *firestore.DocumentSnapshot
+		snap, err = d.Get(ctx)
+		if err != nil {
+			return rs, err
+		}
+		Debugf("id:%v, doc:%#v", d.ID, snap.Data())
+
+		r, rErr := f.dataToStream(snap.Data())
+		if rErr != nil {
+			return rs, rErr
+		}
+		rs[d.ID] = r
+	}
 	return rs, err
 }
 
@@ -221,7 +230,7 @@ func (f *Firestore) ToStruct(ctx context.Context, path string, outStream io.Writ
 	for k, reader := range readerList {
 		err = ReaderToStruct(reader, outStream)
 		if err != nil {
-			log.Printf("[ERROR] %v w/%v", err, k)
+			PrintAlertf(outStream, "cant convert err: %v at %v \n", err, k)
 		}
 	}
 	return err

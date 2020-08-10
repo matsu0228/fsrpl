@@ -5,18 +5,19 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"log"
 	"os"
 	"testing"
 	"time"
 
 	"cloud.google.com/go/firestore"
-	firebase "firebase.google.com/go"
 	"github.com/kylelemons/godebug/pretty"
 )
 
 var (
 	fsEmulator   *Firestore
+	testOpt      = &Option{Debug: true, Stdout: os.Stdout, Stderr: os.Stderr}
 	testDataList = map[string]map[string]interface{}{
 		"one": map[string]interface{}{
 			"string": "value",
@@ -35,7 +36,7 @@ var (
 func TestMain(m *testing.M) {
 
 	var err error
-	println("before all...")
+	println("before all...", os.Getenv("FIRESTORE_EMULATOR_HOST"))
 
 	fsEmulator, err = connectFirebaseEmulator()
 	if err != nil {
@@ -55,7 +56,6 @@ func TestMain(m *testing.M) {
 }
 
 func connectFirebaseEmulator() (*Firestore, error) {
-	var app *firebase.App
 	var client *firestore.Client
 	var err error
 
@@ -65,8 +65,7 @@ func connectFirebaseEmulator() (*Firestore, error) {
 		return nil, err
 	}
 	return &Firestore{
-		firebase:        app,
-		FirestoreClient: client,
+		Client: client,
 	}, nil
 }
 
@@ -75,7 +74,7 @@ func (f *Firestore) importTestdata() error {
 	pathNode := "testData/"
 	for k, testData := range testDataList {
 		path := pathNode + k
-		if err := f.SaveData(ctx, path, testData); err != nil {
+		if err := f.SaveData(ctx, testOpt, path, testData); err != nil {
 			return err
 		}
 	}
@@ -97,7 +96,7 @@ func TestScan(t *testing.T) {
 			t.Errorf("cant decode documents  key:%v err:%v", k, err)
 		} else {
 			if _, ok := testDataList[k]; !ok {
-				log.Printf("[TEST] undefined data key:%v", k)
+				fmt.Printf("[TEST] undefined data key:%v", k)
 				continue
 			}
 			got := InterpretationEachValueForTime(org)
