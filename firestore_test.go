@@ -1,6 +1,6 @@
 // +build integration
 
-package fsrpl
+package main
 
 import (
 	"context"

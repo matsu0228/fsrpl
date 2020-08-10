@@ -1,4 +1,4 @@
-package fsrpl
+package main
 
 import (
 	"bytes"
@@ -11,7 +11,6 @@ import (
 	"strings"
 
 	"cloud.google.com/go/firestore"
-	firebase "firebase.google.com/go"
 	"github.com/ChimeraCoder/gojson"
 	"github.com/antonholmquist/jason"
 	"github.com/pkg/errors"
@@ -20,9 +19,8 @@ import (
 
 // Firestore is datastore object
 type Firestore struct {
-	firebase        *firebase.App
-	FirestoreClient *firestore.Client
-	ProjectID       string
+	Client    *firestore.Client
+	ProjectID string
 }
 
 func loadProjectIDFromCredFile(credFilePath string) (string, error) {
@@ -40,24 +38,17 @@ func loadProjectIDFromCredFile(credFilePath string) (string, error) {
 // NewFirebase is constoractor. connect firebase and firestore
 func NewFirebase(ctx context.Context, crtFile string) (*Firestore, error) {
 
-	var app *firebase.App
-	var client *firestore.Client
 	var err error
 	var projectID string
 	log.Printf("[INFO] connect firestore with: %v", crtFile)
 
 	if crtFile == "" { // local emurator などへの接続時
-		app, err = firebase.NewApp(ctx, nil)
-		if err != nil {
-			return nil, err
-		}
-		client, err = app.Firestore(ctx)
+		fs, err := firestore.NewClient(ctx, "emulator")
 		if err != nil {
 			return nil, err
 		}
 		return &Firestore{
-			firebase:        app,
-			FirestoreClient: client,
+			Client: fs,
 		}, nil
 	}
 
@@ -70,19 +61,14 @@ func NewFirebase(ctx context.Context, crtFile string) (*Firestore, error) {
 		projectID = pjID
 	}
 	opt := option.WithCredentialsFile(crtFile)
-	app, err = firebase.NewApp(context.Background(), nil, opt)
-	if err != nil {
-		return nil, err
-	}
-	client, err = app.Firestore(ctx)
+	fs, err := firestore.NewClient(ctx, projectID, opt)
 	if err != nil {
 		return nil, err
 	}
 
 	return &Firestore{
-		firebase:        app,
-		FirestoreClient: client,
-		ProjectID:       projectID,
+		Client:    fs,
+		ProjectID: projectID,
 	}, nil
 }
 
@@ -103,7 +89,7 @@ func (f *Firestore) getDocumentRefWithPath(path string) (*firestore.DocumentRef,
 	if err != nil {
 		return nil, err
 	}
-	doc := f.FirestoreClient.Collection(colID).Doc(docID)
+	doc := f.Client.Collection(colID).Doc(docID)
 	return doc, nil
 }
 
@@ -142,7 +128,7 @@ func (f *Firestore) SaveData(ctx context.Context, path string, data map[string]i
 // ImportData setdata
 func (f *Firestore) ImportData(ctx context.Context, colID, docID string, data map[string]interface{}) error {
 	log.Printf("[INFO] save to %v / %v. document of %#v", colID, docID, data)
-	doc := f.FirestoreClient.Collection(colID).Doc(docID)
+	doc := f.Client.Collection(colID).Doc(docID)
 	_, err := doc.Set(ctx, data)
 	return err
 }
@@ -166,9 +152,11 @@ func (f *Firestore) Scan(ctx context.Context, path string) (map[string]io.Reader
 	if err != nil {
 		return rs, err
 	}
+	log.Printf("Scan() col:%v, doc:%v", colID, docID)
 
 	if docID == "*" { // wildcard
-		dRefs, err := f.FirestoreClient.Collection(colID).DocumentRefs(ctx).GetAll()
+		dRefs, err := f.Client.Collection(colID).DocumentRefs(ctx).GetAll()
+		log.Printf("getall col:%v, doc:%v, len:%v, err:%v", colID, docID, len(dRefs), err)
 		if err != nil {
 			return rs, err
 		}
@@ -188,8 +176,9 @@ func (f *Firestore) Scan(ctx context.Context, path string) (map[string]io.Reader
 		return rs, err
 	}
 
-	snap, err := f.FirestoreClient.Collection(colID).Doc(docID).Get(ctx)
+	snap, err := f.Client.Collection(colID).Doc(docID).Get(ctx)
 	if err != nil {
+		log.Printf("Get err :%v", err)
 		return nil, err
 	}
 

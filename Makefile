@@ -20,6 +20,11 @@ emulator:
 	cd emulator && docker-compose up -d && cd ..
 	FIRESTORE_EMULATOR_HOST=0.0.0.0:8080 ./emulator/wait.sh
 
+emulator-down:
+	cd emulator && docker-compose down && cd ..
+	unset FIRESTORE_EMULATOR_HOST
+
+
 release:
 	goreleaser --rm-dist
 
