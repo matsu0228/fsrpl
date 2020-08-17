@@ -1,9 +1,11 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+)
 
 var (
-    appName = "fsrpl"
+	appName = "fsrpl"
 	version = "0.2.0"
 )
 

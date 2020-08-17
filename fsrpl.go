@@ -11,7 +11,11 @@ import (
 )
 
 // EnvDebug is environment variable name for debug
-const EnvDebug = "FSRPL_DEBUG"
+const (
+	EnvDebug        = "FSRPL_DEBUG"
+	EnvCredentials  = "FSRPL_CREDENTIALS"
+	EnvEmulatorHost = "FIRESTORE_EMULATOR_HOST"
+)
 
 // Option is command's option
 type Option struct {

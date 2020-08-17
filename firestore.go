@@ -22,6 +22,26 @@ type Firestore struct {
 	ProjectID string
 }
 
+// FirestoreConnectionOption  specifies a connection method such as a secret key or emulator.
+type FirestoreConnectionOption struct {
+	CredentialFilePath string
+	EmulatorProjectID  string
+}
+
+// OptWithEmulatorProjectID generate firestore connection option
+func OptWithEmulatorProjectID(projectID string) FirestoreConnectionOption {
+	return FirestoreConnectionOption{
+		EmulatorProjectID: projectID,
+	}
+}
+
+// OptWithCred generate firestore connection option
+func OptWithCred(cred string) FirestoreConnectionOption {
+	return FirestoreConnectionOption{
+		CredentialFilePath: cred,
+	}
+}
+
 func loadProjectIDFromCredFile(credFilePath string) (string, error) {
 	file, err := os.Open(credFilePath)
 	if err != nil {
@@ -35,38 +55,53 @@ func loadProjectIDFromCredFile(credFilePath string) (string, error) {
 }
 
 // NewFirebase is constoractor. connect firebase and firestore
-func NewFirebase(ctx context.Context, optCli *Option, crtFile string) (*Firestore, error) {
+func NewFirebase(ctx context.Context, cliOpt *Option, conOpt FirestoreConnectionOption) (*Firestore, error) {
 
 	var err error
 	var fs *firestore.Client
 	var projectID string
-	Debugf("connect firestore with: %v", crtFile)
+	cred := conOpt.CredentialFilePath
 
-	if crtFile == "" { // local emurator などへの接続時
-		fs, err = firestore.NewClient(ctx, "emulator")
+	envCred := os.Getenv(EnvCredentials)
+	envEmu := os.Getenv(EnvEmulatorHost)
+	Debugf("connect firestore with: %v env-cred:%s, env-emulator%s", cred, envCred, envEmu)
+
+	if len(envCred) != 0 {
+		cred = envCred
+		Debugf("set cred: %s", cred)
+	}
+
+	if len(envEmu) != 0 {
+		projectID = conOpt.EmulatorProjectID
+		if len(projectID) == 0 {
+			projectID = "emulator"
+		}
+		fs, err = firestore.NewClient(ctx, projectID)
 		if err != nil {
 			return nil, err
 		}
+		PrintInfof(cliOpt.Stdout, "\nconnected emulator (projectID: %v) \n\n", highlight(projectID))
 		return &Firestore{
-			Client: fs,
+			Client:    fs,
+			ProjectID: projectID,
 		}, nil
 	}
 
-	_, err = os.Stat(crtFile)
+	_, err = os.Stat(cred)
 	if err != nil {
-		return nil, errors.Wrapf(err, "not found secret file:%v", crtFile)
+		return nil, errors.Wrapf(err, "not found secret file:%v", cred)
 	}
 
-	if pjID, loadErr := loadProjectIDFromCredFile(crtFile); loadErr == nil {
+	if pjID, loadErr := loadProjectIDFromCredFile(cred); loadErr == nil {
 		projectID = pjID
 	}
-	opt := option.WithCredentialsFile(crtFile)
+	opt := option.WithCredentialsFile(cred)
 	fs, err = firestore.NewClient(ctx, projectID, opt)
 	if err != nil {
 		return nil, err
 	}
 
-	PrintInfof(optCli.Stdout, "\nconnected firestore (projectID: %v) \n\n", highlight(projectID))
+	PrintInfof(cliOpt.Stdout, "\nconnected firestore (projectID: %v) \n\n", highlight(projectID))
 	return &Firestore{
 		Client:    fs,
 		ProjectID: projectID,
@@ -128,7 +163,7 @@ func (f *Firestore) SaveData(ctx context.Context, opt *Option, path string, data
 
 // ImportData setdata
 func (f *Firestore) ImportData(ctx context.Context, opt *Option, colID, docID string, data map[string]interface{}) error {
-	PrintInfof(opt.Stdout, "save to %v/%v (doc:%v) \n\n", colID, docID, data)
+	PrintInfof(opt.Stdout, "save to %s/ %s (doc:%v) \n\n", colID, docID, data)
 	doc := f.Client.Collection(colID).Doc(docID)
 	_, err := doc.Set(ctx, data)
 	return err

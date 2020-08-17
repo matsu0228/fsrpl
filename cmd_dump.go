@@ -20,7 +20,7 @@ type DumpCmd struct {
 func (d *DumpCmd) Run(opt *Option) error {
 	Debugf("dump from %v to %v \n", d.FirestorePath, d.Path)
 	ctx := context.Background()
-	fs, err := NewFirebase(ctx, opt, d.Credentials)
+	fs, err := NewFirebase(ctx, opt, OptWithCred(d.Credentials))
 	if err != nil {
 		return err
 	}

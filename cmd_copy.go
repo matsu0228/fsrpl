@@ -21,14 +21,14 @@ type CopyCmd struct {
 func (c *CopyCmd) Run(opt *Option) error {
 	Debugf("copy from %v to %v isAnotherFirestore:%v", c.FirestorePath, c.DestinationFirestorePath, len(c.DestinationCredentials) != 0)
 	ctx := context.Background()
-	srcFs, err := NewFirebase(ctx, opt, c.Credentials)
+	srcFs, err := NewFirebase(ctx, opt, OptWithCred(c.Credentials))
 	if err != nil {
 		return err
 	}
 
 	if len(c.DestinationCredentials) != 0 {
 		PrintInfof(opt.Stdout, "use destination firestore")
-		dstFs, err := NewFirebase(ctx, opt, c.DestinationCredentials)
+		dstFs, err := NewFirebase(ctx, opt, OptWithCred(c.DestinationCredentials))
 		if err != nil {
 			return err
 		}
