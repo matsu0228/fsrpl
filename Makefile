@@ -2,8 +2,10 @@ BINARY_NAME=fsrpl
 
 .PHONY: build lint test test-local emulator realease
 
+clean: 
+	rm ./bin/*
 build: clean
-	go build  -o ./bin/$(BINARY_NAME)
+	go build -o ./bin/$(BINARY_NAME) ./...
 
 lint:
 	golangci-lint run ./...
