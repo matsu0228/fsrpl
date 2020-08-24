@@ -6,6 +6,8 @@ export PATH=~/go/bin:$PATH
 
 echo -e "\t$(echo $GOPATH)"
 echo -e "\t$(which waitport)"
+echo -e "\t$(echo $FIRESTORE_EMULATOR_HOST )"
 
-echo $FIRESTORE_EMULATOR_HOST 
 waitport -listen $FIRESTORE_EMULATOR_HOST -timeout 2m
+
+echo "finish"

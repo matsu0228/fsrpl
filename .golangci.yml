@@ -1,0 +1,14 @@
+# .golangci.yml
+
+linters-settings:
+  govet:
+    check-shadowing: true
+    enable-all: false
+    disable:
+      - structtag
+    disable-all: false
+
+run:
+  skip-dirs:
+    - testdata
+    - emulator

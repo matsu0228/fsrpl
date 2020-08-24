@@ -1,29 +1,30 @@
 BINARY_NAME=fsrpl
 
-build: clean
-	go build  -o ./bin/$(BINARY_NAME)
+.PHONY: build lint test test-local emulator realease
 
-test:
-	gcloud beta emulators firestore start --host-port=localhost:8812 &
-	golint ./...
-	go vet ./...
-	errcheck ./...
-	# fs emulator
-	export FIRESTORE_EMULATOR_HOST=localhost:8812; go test ./... -v -tags=integration
+clean: 
+	rm ./bin/*
+build: clean
+	go build -o ./bin/$(BINARY_NAME) ./...
+
+lint:
+	golangci-lint run ./...
+
+test-local:
+	go test ./...
+
+test: lint test-local
+	FIRESTORE_EMULATOR_HOST=0.0.0.0:8080 go test ./... -tags=integration
+
+emulator:
+	cd emulator && docker-compose up -d && cd ..
+	FIRESTORE_EMULATOR_HOST=0.0.0.0:8080 ./emulator/wait.sh
+
+emulator-down:
+	cd emulator && docker-compose down && cd ..
+	unset FIRESTORE_EMULATOR_HOST
 
 
 release:
 	goreleaser --rm-dist
 
-# # copy to $GOBIN
-# install: build
-# 	cp -f ./bin/$(BINARY_NAME) $(GOBIN)/
-#
-# # build release binary
-# release: clean
-# 	GOOS=darwin  GOARCH=amd64  go build -o ./bin/$(BINARY_NAME) &&  zip MacOS.zip   ./bin && rm -f ./bin
-# 	GOOS=linux   GOARCH=amd64  go build -o ./bin/$(BINARY_NAME) &&  zip Linux.zip   ./bin && rm -f ./bin
-# 	GOOS=windows GOARCH=amd64  go build -o ./bin/$(BINARY_NAME) &&  zip Windows.zip ./bin && rm -f ./bin
-#
-# clean:
-# 	rm -f ./bin/*

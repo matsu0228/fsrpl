@@ -1,4 +1,8 @@
+<p align="center"><img width="50%" src="assets/logo.png" /></p>
+
 # fsrpl
+
+![test](https://github.com/matsu0228/fsrpl/workflows/test/badge.svg)
 
 English | [日本語](https://github.com/matsu0228/fsrpl/blob/master/README_ja.md)
 
@@ -6,9 +10,9 @@ fsrpl is CloudFirestore replication tool.
 
 Features:
 
-- Replicate document data from some node to another node. With Wildcar option, Replicate all document data from some collection node to another collenction node.
+- Replicate document data from some node to another node. With Wildcard option, Replicate all document data from some collection node to another collection node.
 - Replicate document data from some projectId's Firestore to another projectId's Firestore.
-- Backup document data from some node to local JSON file, and Restore  document data from local JSON file.
+- Backup document data from some node to local JSON file, and Restore  document data from local JSON file. Because the data can be restored to the `firestore emulator` as well, it can be used to create test data.
 
 This tool is Beta version, so if use it BE CAREFUL to [Limitation](#limitation)
 
@@ -23,19 +27,24 @@ Table Of Contents:
     - [Download](#download)
     - [Firestore private key](#firestore-private-key)
   - [USAGE](#usage)
-    - [replicate some documents](#replicate-some-documents)
-    - [export data from some documents](#export-data-from-some-documents)
-    - [import data from some JSON files](#import-data-from-some-json-files)
-    - [generate Go struct from some document](#generate-go-struct-from-some-document)
+    - [copy: copy some documents](#copy-copy-some-documents)
+    - [dump: export data from some documents](#dump-export-data-from-some-documents)
+    - [restore: import data from some JSON files](#restore-import-data-from-some-json-files)
+    - [restore: import Data to firestore emulator](#restore-import-data-to-firestore-emulator)
+    - [(for gopher) show Go struct from some document](#for-gopher-show-go-struct-from-some-document)
   - [Limitation](#limitation)
     - [Supporting data-types](#supporting-data-types)
     <!-- /MarkdownTOC -->
 
 ## DEMO
 
-replicate `specific one document` and `each documents with wildcard option`
+| copy                                                 |
+| ---------------------------------------------------- |
+| <image width="600" src="assets/copy.gif" alt="copy"> |
 
-![fsrpl_demo_190829_02](https://user-images.githubusercontent.com/5501329/63935971-a6dfc280-ca99-11e9-8d8c-1e4e93516602.gif)
+| restore                                                    | dump                                                 |
+| ---------------------------------------------------------- | ---------------------------------------------------- |
+| <image width="400" src="assets/restore.gif" alt="restore"> | <image width="400" src="assets/dump.gif" alt="dump"> |
 
 ## SETUP
 
@@ -44,7 +53,7 @@ replicate `specific one document` and `each documents with wildcard option`
 you can use `homebrew` for macOS
 
 ```
-# add informal fomura
+# add informal formula
 brew tap matsu0228/homebrew-fsrpl
 
 brew install fsrpl
@@ -69,34 +78,34 @@ https://github.com/matsu0228/fsrpl/releases
 - you should set firestore's private key(JSON file).
   - you can get private key from console. see [official document](https://firebase.google.com/docs/admin/setup?authuser=0)
 - You have two options.
-  - set enveronment variable: `FIRESTORE_SECRET`
-  - use `--secret` option
+  - set environment variable: `FSRPL_CREDENTIALS`
+  - use `--cred` option
 
 ## USAGE
 
-### replicate some documents
+### copy: copy some documents
 
-- replicate some documents with `-d` option.
+- copy some documents with `copy` sub command.
 
 ```
-fsrpl [input document path] [output document path]
+fsrpl copy [input document path] --dest [output document path]
 
 e.g.
 
-fsrpl "inputData/user" -d "new/user"
-fsrpl "inputData/*" -d "outputData/*"
+fsrpl copy "inputData/user" --dest "new/user"
+fsrpl copy "inputData/*" --dest "outputData/*"
 ```
 
-### export data from some documents
+### dump: export data from some documents
 
-- export data from some documents with `-f` option.
+- export data from some documents with `dump` sub command.
 
 ```
-fsrpl [input document path] -f [json file directory path]
+fsrpl dump [input document path] -f [json file directory path]
 
 e.g.
 
-fsrpl "inputData/user" -f ./
+fsrpl dump "inputData/user" --path ./
 cat user.json
 {
   "_created_at": "2019-08-26T05:00:00Z",
@@ -115,7 +124,7 @@ cat user.json
 
 
 
-fsrpl "inputData/*" -f ./
+fsrpl dump "inputData/*" --path ./
 
 cat cat.json | jq
 {
@@ -143,31 +152,47 @@ cat dog.json | jq
 ```
 
 
-### import data from some JSON files
+### restore: import data from some JSON files
 
-- import data from JSON files with `-i` option.
+- import data from JSON files with `restore` sub command.
 
 
 ```
-fsrpl [import document path] -i [inport JSON file directory path]
+fsrpl restore [import document path] --path [import JSON file directory path]
 
 e.g.
 
-fsrpl "importData/*" -i "./" --verbose
+fsrpl restore "importData/*" --path "./"
 
-[INFO] save to importData / dog. document of map[string]interface {}{"_created_at":time.Time{wall:0x0, ext:63702392400, loc:(*time.Location)(nil)}, "coin":0, "favorites":[]interface {}{"1", "2"}, "isDeleted":true, "mapData":map[string]interface {}{"b":true, "name":"mName"}, "name":"dog"}
+save to importData/ dog. data: map[string]interface {}{"_created_at":time.Time{wall:0x0, ext:63702392400, loc:(*time.Location)(nil)}, "coin":0, "favorites":[]interface {}{"1", "2"}, "isDeleted":true, "mapData":map[string]interface {}{"b":true, "name":"mName"}, "name":"pig"}
 ...
-[INFO] import:user of map[string]interface {}{"favorites":[]interface {}{"1", "2"}, "isDeleted":true, "mapData":map[string]interface {}{"b":true, "name":"mName"}, "name":"user", "_created_at":time.Time{wall:0x0, ext:63702392400, loc:(*time.Location)(nil)}, "coin":0}
 ```
 
-### generate Go struct from some document
 
-- generate Go struct from some document with `-s` option
+### restore: import Data to firestore emulator
+
+- With setting the `FIRESTORE_EMULATOR_HOST` environment variable, the `restore` command can be used to restore the emulator.
+  - The `--emulators-project-id` option allow to specify the projectId with to avoid data conflicts by specifying it.
+
+``.
+FIRESTORE_EMULATOR_HOST=**your_firestore_emulator** fsrpl restore [import document path] --path [import JSON file directory path] --emulators-project-id [test unique Id]
+
+e.g.
+
+FIRESTORE_EMULATOR_HOST=localhost:8080 fsrpl restore "importData/*" --path "./" --emulators-project-id emulator-integration-test
+````
+
+
+Translated with www.DeepL.com/Translator (free version)
+
+### (for gopher) show Go struct from some document
+
+- generate Go struct from some document with `-show-go-struct` option
 
 ```
 e.g.
 
-fsrpl -p "inputData/user" -s
+fsrpl dump "inputData/user" --show-go-struct
 
 package main
 

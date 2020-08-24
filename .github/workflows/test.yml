@@ -1,0 +1,31 @@
+name: test
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v1
+      # golang-ci
+      - name: install linter
+        run: curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b $(go env GOPATH)/bin v1.30.0
+      - name: lint
+        run: $(go env GOPATH)/bin/golangci-lint run ./...
+      - name: test
+        run: go test ./... -v
+      # test with firestore
+      - name: docker-compose up
+        run: docker-compose up -d
+        working-directory: emulator
+      - name: wait port
+        run: bash -uvx ./wait.sh
+        working-directory: emulator
+        env:
+          FIRESTORE_EMULATOR_HOST: 0.0.0.0:8080
+      - name: go test with firestore
+        run: |
+          go test ./... -v -tags=integration
+        env:
+          FIRESTORE_EMULATOR_HOST: 0.0.0.0:8080

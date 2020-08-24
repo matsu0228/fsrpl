@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"log"
 )
 
 // posString returns the first index of element in slice.
@@ -21,11 +20,12 @@ func containsString(slice []string, element string) bool {
 	return !(posString(slice, element) == -1)
 }
 
-func askForConfirmation() bool {
+func askForConfirmation(opt *Option) bool {
 	var response string
 	_, err := fmt.Scanln(&response)
 	if err != nil {
-		log.Fatal(err)
+		PrintAlertf(opt.Stderr, "cant scan input: %v \n", err)
+		return false
 	}
 	okayResponses := []string{"y", "Y", "yes", "Yes", "YES"}
 	nokayResponses := []string{"n", "N", "no", "No", "NO"}
@@ -33,8 +33,7 @@ func askForConfirmation() bool {
 		return true
 	} else if containsString(nokayResponses, response) {
 		return false
-	} else {
-		fmt.Println("Please type yes or no and then press enter:")
-		return askForConfirmation()
 	}
+	PrintAlertf(opt.Stdout, "Please type yes or no and then press enter: \n")
+	return askForConfirmation(opt)
 }
