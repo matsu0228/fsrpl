@@ -1,7 +1,16 @@
+builds:
+  -
+    goos:
+      - darwin
+      - linux
+      - windows
+    ignore:
+      - goos: darwin
+        goarch: 386
 brews:
   -
     name: fsrpl
-    github:
+    tap:
       owner: matsu0228
       name: homebrew-fsrpl
     commit_author:
