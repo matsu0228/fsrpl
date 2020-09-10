@@ -63,7 +63,7 @@ func (c *CopyCmd) Replicate(ctx context.Context, opt *Option, srcFs, dstFs *Fire
 		if err != nil {
 			return err
 		}
-		om := InterpretationEachValueForTime(m)
+		om := dstFs.InterpretationEachValueForTime(m)
 
 		err = dstFs.SaveData(ctx, opt, dstPath, om)
 		if err != nil {

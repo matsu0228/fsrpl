@@ -29,7 +29,7 @@ func ImportDataFromJSONFiles(ctx context.Context, opt *Option, fs *Firestore, im
 		if err := json.NewDecoder(file).Decode(&org); err != nil {
 			return err
 		}
-		documentData := InterpretationEachValueForTime(org)
+		documentData := fs.InterpretationEachValueForTime(org)
 
 		Debugf("import:%v to %v data: %#v", basefn, exportPath, documentData)
 		return fs.SaveDataWithSubdocumentID(ctx, opt, exportPath, basefn, documentData)

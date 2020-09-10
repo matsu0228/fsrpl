@@ -99,7 +99,7 @@ func TestScan(t *testing.T) {
 				fmt.Printf("[TEST] undefined data key:%v", k)
 				continue
 			}
-			got := InterpretationEachValueForTime(org)
+			got := fsEmulator.InterpretationEachValueForTime(org)
 			if diff := pretty.Compare(got, testDataList[k]); diff != "" {
 				t.Errorf("invalid decoded json: %s", pretty.Compare(got, testDataList[k]))
 			}
