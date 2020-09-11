@@ -10,10 +10,6 @@ import (
 	"github.com/kylelemons/godebug/pretty"
 )
 
-/*func TestImportDataFromJSONFiles(t *testing.T) {
-	err = ImportDataFromJSONFiles(ctx, opt, fs, r.Path, r.FirestorePath)
-}*/
-
 func TestScan(t *testing.T) {
 
 	ctx := context.Background()

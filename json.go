@@ -19,7 +19,13 @@ func ImportDataFromJSONFiles(ctx context.Context, opt *Option, fs *Firestore, im
 			return nil
 		}
 		fn := info.Name()
-		basefn := filepath.Base(fn[:len(fn)-len(filepath.Ext(fn))])
+
+		fnExtention := filepath.Ext(fn)
+		if fnExtention != ".json" {
+			Debugf("skip: %s with extention of %s", fn, fnExtention)
+			return nil
+		}
+		basefn := filepath.Base(fn[:len(fn)-len(fnExtention)])
 
 		var org map[string]interface{}
 		file, err := os.Open(path)
