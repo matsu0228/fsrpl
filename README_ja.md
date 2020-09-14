@@ -9,17 +9,17 @@
 
 `fsrpl` (CloudFirestore replication tool) は CloudFirestore のデータをコピー・バックアップ・復元することができるCLIツールです.
 
-Features:
+## Features
 
 - 特定のドキュメントを、別のCollection配下にコピーできる。また、ワイルドカードを利用することでコレクション配下のすべてのドキュメントをコピーできる
 - 特定のProjectのFirebaseから他のFirebaseへ、特定のドキュメントのデータをコピーできる
-- 特定のドキュメントをローカルのJSONファイルとしてバックアップができる。また、ローカルのJSONファイルからドキュメントを復元できる。`firestore emulator` へもデータの復元できるため、テストデータ作成にも利用できる
+- 特定のドキュメントをローカルのJSONファイルとしてバックアップができる。また、ローカルのJSONファイルからドキュメントを復元できる。`firestore emulator` へもデータの復元ができるため、テストデータ作成にも利用できる
 
-本ツールはβ版です。ご利用時には、[制限](#%e5%88%b6%e9%99%90)について注意してください。
 
 Table Of Contents:
 <!-- MarkdownTOC -->
 - [fsrpl](#fsrpl)
+  - [Features](#features)
   - [DEMO](#demo)
   - [SETUP](#setup)
     - [homebrew](#homebrew)
@@ -214,24 +214,3 @@ type JsonStruct struct {
 
 ### 対応しているFirestoreの型
 
-
-[Firestoreの型](https://firebase.google.com/docs/firestore/manage-data/data-types) のうち、本ツールで対応している型は下記です
-
-
-```
-- Boolean
-- Text string
-- Integer
-- Array
-- Map
-- Date and time
-- Null
-- Floating-point number
-```
-
-現時点で、下記のデータ型には対応できていないので、ご利用時には注意ください。今後対応予定です。
-```
-- Bytes
-- Geographical point
-- Reference
-```
