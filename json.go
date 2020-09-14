@@ -19,7 +19,13 @@ func ImportDataFromJSONFiles(ctx context.Context, opt *Option, fs *Firestore, im
 			return nil
 		}
 		fn := info.Name()
-		basefn := filepath.Base(fn[:len(fn)-len(filepath.Ext(fn))])
+
+		fnExtention := filepath.Ext(fn)
+		if fnExtention != ".json" {
+			Debugf("skip: %s with extention of %s", fn, fnExtention)
+			return nil
+		}
+		basefn := filepath.Base(fn[:len(fn)-len(fnExtention)])
 
 		var org map[string]interface{}
 		file, err := os.Open(path)
@@ -29,7 +35,7 @@ func ImportDataFromJSONFiles(ctx context.Context, opt *Option, fs *Firestore, im
 		if err := json.NewDecoder(file).Decode(&org); err != nil {
 			return err
 		}
-		documentData := InterpretationEachValueForTime(org)
+		documentData := fs.InterpretationEachValueForTime(org)
 
 		Debugf("import:%v to %v data: %#v", basefn, exportPath, documentData)
 		return fs.SaveDataWithSubdocumentID(ctx, opt, exportPath, basefn, documentData)

@@ -8,18 +8,18 @@ English | [日本語](https://github.com/matsu0228/fsrpl/blob/master/README_ja.m
 
 fsrpl is CloudFirestore replication tool.
 
-Features:
+## Features
 
-- Replicate document data from some node to another node. With Wildcard option, Replicate all document data from some collection node to another collection node.
-- Replicate document data from some projectId's Firestore to another projectId's Firestore.
-- Backup document data from some node to local JSON file, and Restore  document data from local JSON file. Because the data can be restored to the `firestore emulator` as well, it can be used to create test data.
-
-This tool is Beta version, so if use it BE CAREFUL to [Limitation](#limitation)
+- `copy` Replicate document data from some node to another node. With Wildcard option, Replicate all document data from some collection node to another collection node.
+  - In addition to this, replicate document data from some projectId's Firestore to another projectId's Firestore.
+- `dump` Backup document data from some node to local JSON file.
+- `restore` Restore document data from local JSON file. Because the data can be restored to the `firestore emulator` as well, it can be used to create test data.
 
 Table Of Contents:
 <!-- MarkdownTOC -->
 
 - [fsrpl](#fsrpl)
+  - [Features](#features)
   - [DEMO](#demo)
   - [SETUP](#setup)
     - [homebrew](#homebrew)
@@ -32,8 +32,6 @@ Table Of Contents:
     - [restore: import data from some JSON files](#restore-import-data-from-some-json-files)
     - [restore: import Data to firestore emulator](#restore-import-data-to-firestore-emulator)
     - [(for gopher) show Go struct from some document](#for-gopher-show-go-struct-from-some-document)
-  - [Limitation](#limitation)
-    - [Supporting data-types](#supporting-data-types)
     <!-- /MarkdownTOC -->
 
 ## DEMO
@@ -209,28 +207,3 @@ type JsonStruct struct {
 
 ```
 
-## Limitation
-
-### Supporting data-types
-
-
-Firestore's data-types list is [here (official document)](https://firebase.google.com/docs/firestore/manage-data/data-types) .
-This tool ONLY support below data-types.
-
-```
-- Boolean
-- Text string
-- Integer
-- Array
-- Map
-- Date and time
-- Null
-- Floating-point number
-```
-
-At this time, the following data types are not supported, so please be careful when using them. It will be supported in the future.
-```
-- Bytes
-- Geographical point
-- Reference
-```
