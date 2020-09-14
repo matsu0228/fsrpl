@@ -10,9 +10,10 @@ fsrpl is CloudFirestore replication tool.
 
 ## Features
 
-- Replicate document data from some node to another node. With Wildcard option, Replicate all document data from some collection node to another collection node.
-- Replicate document data from some projectId's Firestore to another projectId's Firestore.
-- Backup document data from some node to local JSON file, and Restore  document data from local JSON file. Because the data can be restored to the `firestore emulator` as well, it can be used to create test data.
+- `copy` Replicate document data from some node to another node. With Wildcard option, Replicate all document data from some collection node to another collection node.
+  - In addition to this, replicate document data from some projectId's Firestore to another projectId's Firestore.
+- `dump` Backup document data from some node to local JSON file.
+- `restore` Restore document data from local JSON file. Because the data can be restored to the `firestore emulator` as well, it can be used to create test data.
 
 Table Of Contents:
 <!-- MarkdownTOC -->

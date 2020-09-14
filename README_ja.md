@@ -11,9 +11,10 @@
 
 ## Features
 
-- 特定のドキュメントを、別のCollection配下にコピーできる。また、ワイルドカードを利用することでコレクション配下のすべてのドキュメントをコピーできる
-- 特定のProjectのFirebaseから他のFirebaseへ、特定のドキュメントのデータをコピーできる
-- 特定のドキュメントをローカルのJSONファイルとしてバックアップができる。また、ローカルのJSONファイルからドキュメントを復元できる。`firestore emulator` へもデータの復元ができるため、テストデータ作成にも利用できる
+- `copy` 特定のドキュメントを、別のCollection配下にコピーできる。また、ワイルドカードを利用することでコレクション配下のすべてのドキュメントをコピーできる。
+  - さらに、特定のProjectのFirebaseから他のFirebaseへ、特定のドキュメントのデータをコピーできる
+- `dump` 特定のドキュメントをローカルのJSONファイルとしてバックアップができる。
+- `restore` ローカルのJSONファイルからドキュメントを復元できる。`firestore emulator` へもデータの復元ができるため、テストデータ作成にも利用できる
 
 
 Table Of Contents:
@@ -32,8 +33,6 @@ Table Of Contents:
     - [restore:ローカルのJSONファイルからデータを復元する](#restoreローカルのjsonファイルからデータを復元する)
     - [restore:firestore emulatorへデータを復元する](#restorefirestore-emulatorへデータを復元する)
     - [(Go開発者向け機能)ドキュメントのデータからGoの構造体を生成する](#go開発者向け機能ドキュメントのデータからgoの構造体を生成する)
-  - [制限](#制限)
-    - [対応しているFirestoreの型](#対応しているfirestoreの型)
 
 ## DEMO
 
@@ -94,8 +93,8 @@ fsrpl copy [コピー元のドキュメントを指定] --dest [コピー先の�
 
 e.g.
 
-fsrpl "inputData/user" --dest "new/user"
-fsrpl "inputData/*" --dest "outputData/*"
+fsrpl copy "inputData/user" --dest "new/user"
+fsrpl copy "inputData/*" --dest "outputData/*"
 ```
 
 
@@ -209,8 +208,4 @@ type JsonStruct struct {
 }
 
 ```
-
-## 制限
-
-### 対応しているFirestoreの型
 
