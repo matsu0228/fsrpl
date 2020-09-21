@@ -171,6 +171,7 @@ save to importData/ dog. data: map[string]interface {}{"_created_at":time.Time{w
 
 - With setting the `FIRESTORE_EMULATOR_HOST` environment variable, the `restore` command can be used to restore the emulator.
   - The `--emulators-project-id` option allow to specify the projectId with to avoid data conflicts by specifying it.
+  - see this [examples](/examples)
 
 ```
 FIRESTORE_EMULATOR_HOST=**your_firestore_emulator** fsrpl restore [import document path] --path [import JSON file directory path] --emulators-project-id [test unique Id]

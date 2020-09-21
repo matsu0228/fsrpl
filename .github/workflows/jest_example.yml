@@ -1,0 +1,25 @@
+name: jest_example
+
+on: [push]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v1
+      # test with firestore
+      - name: docker-compose up
+        run: docker-compose up -d
+        working-directory: emulator
+      - name: wait port
+        run: bash -uvx ./wait.sh
+        working-directory: emulator
+        env:
+          FIRESTORE_EMULATOR_HOST: 0.0.0.0:8080
+      - name: install for jest
+        run: yarn install
+        working-directory: examples
+      - name: jest with firestore
+        run: FIRESTORE_EMULATOR_HOST=0.0.0.0:8080 yarn test
+        working-directory: examples

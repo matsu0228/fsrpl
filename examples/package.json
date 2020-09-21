@@ -1,0 +1,45 @@
+{
+  "name": "examples",
+  "version": "1.0.0",
+  "main": "index.js",
+  "license": "MIT",
+  "scripts": {
+    "test": "npx jest"
+  },
+  "jest": {
+    "verbose": true,
+    "testEnvironment": "jest-environment-uint8array",
+    "testMatch": [
+      "**/__tests__/**/*.+(ts|tsx)",
+      "**/?(*.)+(spec|test).+(ts|tsx)"
+    ],
+    "transform": {
+      "^.+\\.(ts|tsx)$": "ts-jest",
+      "^.+\\.(js|jsx)$": "babel-jest"
+    },
+    "testPathIgnorePatterns": [
+      "/node_modules/",
+      ".emu.+(ts|tsx|js)"
+    ],
+    "globals": {
+      "ts-jest": {
+        "tsConfig": "tsconfig.json"
+      }
+    }
+  },
+  "devDependencies": {
+    "@babel/preset-typescript": "^7.10.4",
+    "@firebase/rules-unit-testing": "^1.0.3",
+    "@types/jest": "^26.0.13",
+    "@types/node": "^14.10.3",
+    "eslint-plugin-jest": "^24.0.1",
+    "jest": "^26.4.2",
+    "jest-environment-uint8array": "^1.0.0",
+    "ts-jest": "^26.3.0"
+  },
+  "dependencies": {
+    "firebase-admin": "^9.2.0",
+    "jest-environment-node": "^26.0.1",
+    "typescript": "^4.0.2"
+  }
+}

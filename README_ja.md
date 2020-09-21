@@ -174,6 +174,7 @@ save to importData/ dog. data: map[string]interface {}{"_created_at":time.Time{w
 
 - firestore emulatorを起動し、`FIRESTORE_EMULATOR_HOST` の環境変数を設定した状態で、 `restore` コマンドを利用すると、emulatorへの復元ができる
   - `--emulators-project-id` オプションにてprojectId指定してrestoreできる。emulatorではprojectIdにてデータを別管理できるため、並列で複数のtestを実行する場合には、testごとに固有のprojectIdを指定することでデータの競合を避けられる。
+  - テストコードでの利用例はこちらの [examples](/examples) を参照のこと
 
 ```
 FIRESTORE_EMULATOR_HOST=**your_firestore_emulator**  fsrpl restore [コピー元のドキュメントを指定] --path [復元対象のJSONファイルを指定] --emulators-project-id [testごとに固有のId]
