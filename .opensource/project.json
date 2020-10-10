@@ -1,0 +1,11 @@
+{
+    "name": "fsrpl",
+    "platforms": [
+      "Go",
+      "Admin"
+    ],
+    "content": "README.md",
+    "related": [
+      "firebase/firebase-admin-go"
+    ]
+  }
