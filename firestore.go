@@ -109,12 +109,12 @@ func NewFirebase(ctx context.Context, cliOpt *Option, conOpt FirestoreConnection
 }
 
 // parsePath is parser of path to collection path and documentID.
-// path should containts even number.
+// path should contains even number.
 func (f *Firestore) parsePath(path string) (string, string, error) {
 	sep := "/"
 	paths := strings.Split(path, sep)
 	if len(paths)%2 != 0 {
-		return "", "", fmt.Errorf("path should containts even namber of IDs:%v", path)
+		return "", "", fmt.Errorf("path should contains even number of IDs:%v", path)
 	}
 	return strings.Join(paths[:len(paths)-1], sep), paths[len(paths)-1], nil
 }
