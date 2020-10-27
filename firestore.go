@@ -246,9 +246,9 @@ func ReaderToStruct(reader io.Reader, outStream io.Writer) error {
 	pkg := "main"
 	tagList := []string{"json"}
 	subStruct := false
-	// convertFloats := true
+	convertFloats := true
 
-	output, err := gojson.Generate(reader, parser, name, pkg, tagList, subStruct) //, convertFloats)
+	output, err := gojson.Generate(reader, parser, name, pkg, tagList, subStruct, convertFloats)
 	if err != nil {
 		return err
 	}
