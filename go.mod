@@ -7,8 +7,7 @@ require (
 	cloud.google.com/go/bigquery v1.3.0 // indirect
 	cloud.google.com/go/firestore v1.1.0
 	cloud.google.com/go/storage v1.3.0 // indirect
-	firebase.google.com/go v3.9.0+incompatible
-	github.com/ChimeraCoder/gojson v1.0.0
+	github.com/ChimeraCoder/gojson v1.1.0
 	github.com/alecthomas/kong v0.2.11
 	github.com/antonholmquist/jason v1.0.0
 	github.com/golang/groupcache v0.0.0-20191027212112-611e8accdfc9 // indirect
